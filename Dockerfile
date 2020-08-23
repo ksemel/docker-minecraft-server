@@ -1,30 +1,36 @@
-FROM openjdk:8u212-jre-alpine
+FROM ubuntu:20.10
 
 LABEL org.opencontainers.image.authors="Geoff Bourne <itzgeoff@gmail.com>"
+RUN apt-get -y update \
+  && apt-get -y upgrade
 
-# upgrade all packages since alpine jre8 base image tops out at 8u212
-RUN apk -U --no-cache upgrade
-
-RUN apk add --no-cache -U \
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install \
+  nfs-common \
   openssl \
   imagemagick \
   lsof \
-  su-exec \
-  shadow \
-  bash \
-  curl iputils wget \
+  curl \
+  wget \
   git \
   jq \
   mysql-client \
-  tzdata \
   rsync \
-  nano \
-  sudo \
-  knock \
-  ttf-dejavu
+  dos2unix \
+  knockd \
+  iputils-ping \
+  openjdk-8-jdk
 
-RUN addgroup -g 1000 minecraft \
-  && adduser -Ss /bin/false -u 1000 -G minecraft -h /home/minecraft minecraft \
+# Install Amazon EFS Utils
+RUN mkdir /tmp/efs-utils \
+  && cd /tmp/efs-utils \
+  && git clone https://github.com/aws/efs-utils . \
+  && apt-get update \
+  && apt-get -y install binutils \
+  && ./build-deb.sh \
+  && apt-get -y install ./build/amazon-efs-utils*deb
+
+# Add Minecraft User
+RUN useradd minecraft -s /bin/bash -m \
   && mkdir -m 777 /data \
   && chown minecraft:minecraft /data /home/minecraft
 
